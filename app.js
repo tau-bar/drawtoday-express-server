@@ -1,6 +1,9 @@
 const express = require("express");
 const app = express();
 const db = require("./services/db");
+var cors = require("cors");
+
+app.use(cors());
 
 /**
  * Get the word of the day
