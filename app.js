@@ -23,13 +23,27 @@ function formatDateTime(string) {
 /**
  * Get the word of the day
  */
-app.get("/api/getWordOfDay", (req, res) => {
-  db("words")
+app.get("/api/getWordOfDay", async (req, res) => {
+  const drawingCount = await db
+    .count("id")
+    .from("drawings")
+    .where("user_id", req.query.userId)
+    .then((data) => {
+      const count = JSON.parse(JSON.stringify(data))[0]["count(`id`)"];
+      return count;
+    });
+
+  await db("words")
     .select(["id", "word"])
     .from("words")
     .orderBy("date", "desc")
     .limit(1)
-    .then((word) => res.send(word));
+    .then((word) => {
+      res.send({
+        word: word,
+        postedToday: drawingCount === 1 && req.query.userId !== 0,
+      });
+    });
 });
 
 app.post("/api/postDrawing", (req, res) => {
@@ -43,13 +57,11 @@ app.post("/api/postDrawing", (req, res) => {
     })
     .then(() =>
       res.send({
-        ok: true,
         message: "Successfully posted drawing.",
       })
     )
     .catch((err) => {
-      res.send({
-        ok: false,
+      res.status(403).send({
         message: "Could not post drawing.",
       });
     });
@@ -118,6 +130,11 @@ app.post("/api/signup", async (req, res) => {
     res.status(409).send({ message: "Username is taken." });
   }
 });
+
+// app.post("/api/getPosts", async (req, res) => {
+//   const page = req.body.page;
+//   db("drawings").
+// })
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
