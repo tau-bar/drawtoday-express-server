@@ -3,8 +3,15 @@ const app = express();
 const db = require("./services/db");
 var cors = require("cors");
 
+const bcrypt = require("bcrypt");
+
 app.use(cors());
 app.use(express.json());
+
+const utils = require("./utils");
+const generateAccessToken = utils[0];
+
+const INCORRECT_USERNAME_PASSWORD = "Incorrect username/password";
 
 /** Utility functions */
 function formatDateTime(string) {
@@ -41,7 +48,6 @@ app.post("/api/postDrawing", (req, res) => {
       })
     )
     .catch((err) => {
-      console.log(err.sqlMessage);
       res.send({
         ok: false,
         message: "Could not post drawing.",
@@ -49,7 +55,70 @@ app.post("/api/postDrawing", (req, res) => {
     });
 });
 
-app;
+app.post("/api/login", async (req, res) => {
+  const username = req.body.username;
+  const user = await db("users")
+    .select("id", "username", "password_digest", "salt")
+    .where("username", username)
+    .then((data) => JSON.parse(JSON.stringify(data))[0]);
+
+  if (user === undefined) {
+    res.status(403).send({ message: INCORRECT_USERNAME_PASSWORD });
+    return;
+  }
+
+  const userSalt = user.salt;
+  const passwordDigest = user.password_digest;
+  const passwordDigestChallenge = await bcrypt.hash(
+    req.body.password,
+    userSalt
+  );
+  if (passwordDigest === passwordDigestChallenge) {
+    const token = generateAccessToken({ username: req.body.username });
+    res.send({ token: token, userId: user.id });
+  } else {
+    res.status(403).send({ message: INCORRECT_USERNAME_PASSWORD });
+    return;
+  }
+});
+
+app.post("/api/signup", async (req, res) => {
+  const username = req.body.username;
+  const password = req.body.password;
+  const userCount = await db
+    .count("id")
+    .from("users")
+    .where("username", username)
+    .then((data) => {
+      const userCount = JSON.parse(JSON.stringify(data))[0]["count(`id`)"];
+      return userCount;
+    });
+  if (userCount === 0) {
+    const salt = await bcrypt.genSalt(10);
+    const passwordDigest = await bcrypt.hash(password, salt);
+    const token = generateAccessToken({ username: username });
+    db("users")
+      .insert({
+        username: username,
+        password_digest: passwordDigest,
+        salt: salt,
+      })
+      .then((data) =>
+        res.send({
+          token: token,
+          userId: data[0],
+        })
+      )
+      .catch((err) =>
+        res
+          .status(400)
+          .send({ message: "Something went wrong. Please try again." })
+      );
+  } else {
+    res.status(409).send({ message: "Username is taken." });
+  }
+});
+
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
   console.log("Listening on port " + port);
