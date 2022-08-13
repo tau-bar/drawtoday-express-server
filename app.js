@@ -26,26 +26,30 @@ function formatDateTime(string) {
  * Get the word of the day
  */
 app.get("/api/getWordOfDay", async (req, res) => {
+  const word = await db("words")
+    .select(["id", "word"])
+    .from("words")
+    .orderBy("id", "desc")
+    .limit(1)
+    .then((word) => {
+      return word;
+    });
+
+  const wordId = JSON.parse(JSON.stringify(word))[0]["id"];
   const drawingCount = await db
     .count("id")
     .from("drawings")
     .where("user_id", req.query.userId)
+    .where("word_id", wordId)
     .then((data) => {
       const count = JSON.parse(JSON.stringify(data))[0]["count(`id`)"];
       return count;
     });
 
-  await db("words")
-    .select(["id", "word"])
-    .from("words")
-    .orderBy("date", "desc")
-    .limit(1)
-    .then((word) => {
-      res.send({
-        word: word,
-        postedToday: drawingCount === 1 && req.query.userId !== 0,
-      });
-    });
+  res.send({
+    word: word,
+    postedToday: drawingCount === 1 && req.query.userId !== 0,
+  });
 });
 
 app.get("/api/getDrawing", (req, res) => {
