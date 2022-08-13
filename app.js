@@ -9,7 +9,8 @@ app.use(cors());
 app.use(express.json());
 
 const utils = require("./utils");
-const generateAccessToken = utils[0];
+const generateAccessToken = utils.generateAccessToken;
+const authenticateToken = utils.authenticateToken;
 
 const INCORRECT_USERNAME_PASSWORD = "Incorrect username/password";
 
@@ -46,7 +47,7 @@ app.get("/api/getWordOfDay", async (req, res) => {
     });
 });
 
-app.post("/api/postDrawing", (req, res) => {
+app.post("/api/postDrawing", authenticateToken, (req, res) => {
   const { userId, wordId, drawing, date } = req.body;
   db("drawings")
     .insert({
