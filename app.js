@@ -47,6 +47,26 @@ app.get("/api/getWordOfDay", async (req, res) => {
     });
 });
 
+app.get("/api/getDrawing", (req, res) => {
+  const { userId, wordId } = req.query;
+  db("drawings")
+    .select("drawing")
+    .where("word_id", wordId)
+    .where("user_id", userId)
+    .then((data) => {
+      const parsedData = JSON.parse(JSON.stringify(data));
+      if (parsedData.length > 0) {
+        res.send({
+          drawing: parsedData[0].drawing,
+        });
+      } else {
+        res.status(404).send({
+          message: "No drawing found for this word id.",
+        });
+      }
+    });
+});
+
 app.post("/api/postDrawing", authenticateToken, (req, res) => {
   const { userId, wordId, drawing, date } = req.body;
   db("drawings")
