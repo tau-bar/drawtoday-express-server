@@ -9,6 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 const utils = require("./utils");
+const { initScheduledJobs } = require("./services/cron");
 const generateAccessToken = utils.generateAccessToken;
 const authenticateToken = utils.authenticateToken;
 
@@ -158,6 +159,11 @@ app.post("/api/signup", async (req, res) => {
 // })
 
 const port = process.env.PORT || 3001;
+
+initScheduledJobs();
+
 app.listen(port, () => {
   console.log("Listening on port " + port);
 });
+
+module.exports = app;
