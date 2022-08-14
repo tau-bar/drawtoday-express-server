@@ -157,10 +157,31 @@ app.post("/api/signup", async (req, res) => {
   }
 });
 
-// app.post("/api/getPosts", async (req, res) => {
-//   const page = req.body.page;
-//   db("drawings").
-// })
+app.get("/api/getPosts", async (req, res) => {
+  const limit = req.query.limit;
+  const offset = req.query.offset;
+
+  const word = await db("words")
+    .select(["id", "word"])
+    .from("words")
+    .orderBy("id", "desc")
+    .limit(1)
+    .then((word) => {
+      return word;
+    });
+
+  const wordId = JSON.parse(JSON.stringify(word))[0]["id"];
+
+  db("drawings")
+    .select("drawing")
+    .where("word_id", wordId)
+    .offset(offset)
+    .limit(limit)
+    .then((data) => {
+      const posts = JSON.parse(JSON.stringify(data));
+      res.send({ posts: posts });
+    });
+});
 
 const port = process.env.PORT || 3001;
 
