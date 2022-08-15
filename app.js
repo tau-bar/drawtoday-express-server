@@ -10,6 +10,7 @@ app.use(express.json());
 
 const utils = require("./utils");
 const { initScheduledJobs } = require("./services/cron");
+const { application } = require("express");
 const generateAccessToken = utils.generateAccessToken;
 const authenticateToken = utils.authenticateToken;
 
@@ -160,6 +161,7 @@ app.post("/api/signup", async (req, res) => {
 app.get("/api/getPosts", async (req, res) => {
   const limit = req.query.limit;
   const offset = req.query.offset;
+  const userId = req.query.userId;
 
   const word = await db("words")
     .select(["id", "word"])
@@ -172,15 +174,67 @@ app.get("/api/getPosts", async (req, res) => {
 
   const wordId = JSON.parse(JSON.stringify(word))[0]["id"];
 
+  const drawingIdColumnIdentifier = db.ref("drawings.id");
+  // Checks whether user likes a drawing
+  const likedSubquery = db("likes")
+    .count("*")
+    .as("liked")
+    .where("likes.drawing_id", drawingIdColumnIdentifier)
+    .where("likes.user_id", userId);
   db("drawings")
-    .select("drawing")
+    .join("users", "users.id", "drawings.user_id")
+    .join("words", "words.id", "drawings.word_id")
+    .leftOuterJoin("likes", "drawings.id", "likes.drawing_id")
+    .select(
+      "drawing",
+      "username",
+      "word",
+      "drawings.id AS drawingId",
+      "users.id AS userId",
+      likedSubquery
+    )
+    .count("likes.id AS likes")
     .where("word_id", wordId)
+    .groupBy("drawings.id")
     .offset(offset)
     .limit(limit)
     .then((data) => {
       const posts = JSON.parse(JSON.stringify(data));
       res.send({ posts: posts });
-    });
+    })
+    .catch((err) => console.log(err));
+});
+
+app.put("/api/likePost", authenticateToken, (req, res) => {
+  const likeValue = req.body.likeValue;
+  const drawingId = req.body.drawingId;
+  const userId = req.body.userId;
+  if (likeValue) {
+    db("likes")
+      .insert({
+        user_id: userId,
+        drawing_id: drawingId,
+      })
+      .then(() => res.send("Post successfully liked."))
+      .catch((err) =>
+        res
+          .status(400)
+          .send({ message: "Something went wrong. Please try again." })
+      );
+  } else {
+    db("likes")
+      .where("user_id", userId)
+      .where("drawing_id", drawingId)
+      .del()
+      .then(() => {
+        res.send("Post successfully unliked.");
+      })
+      .catch((err) => {
+        res
+          .status(400)
+          .send({ message: "Something went wrong. Please try again." });
+      });
+  }
 });
 
 const port = process.env.PORT || 3001;

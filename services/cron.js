@@ -3,7 +3,7 @@ const randomWords = require("random-words");
 const db = require("./db");
 
 exports.initScheduledJobs = () => {
-  const scheduledJobFunction = CronJob.schedule("*/01 08 * * *", () => {
+  const scheduledJobFunction = CronJob.schedule("01 08 * * *", () => {
     const newWord = randomWords();
     db("words")
       .insert({
