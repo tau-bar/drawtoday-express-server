@@ -10,7 +10,6 @@ app.use(express.json());
 
 const utils = require("./utils");
 const { initScheduledJobs } = require("./services/cron");
-const { application } = require("express");
 const generateAccessToken = utils.generateAccessToken;
 const authenticateToken = utils.authenticateToken;
 

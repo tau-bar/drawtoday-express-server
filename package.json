@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -23,5 +24,8 @@
     "nodemon": "^2.0.19",
     "random-words": "^1.2.0",
     "uuid": "^8.3.2"
+  },
+  "engines": {
+    "node": "^16.15.0"
   }
 }
