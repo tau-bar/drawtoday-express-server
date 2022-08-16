@@ -171,8 +171,6 @@ app.get("/api/getPosts", async (req, res) => {
       return word;
     });
 
-  const wordId = JSON.parse(JSON.stringify(word))[0]["id"];
-
   const drawingIdColumnIdentifier = db.ref("drawings.id");
   // Checks whether user likes a drawing
   const likedSubquery = db("likes")
@@ -194,8 +192,7 @@ app.get("/api/getPosts", async (req, res) => {
     )
     .count("likes.id AS likes")
     .groupBy("drawings.id")
-    .orderBy("words.id", "desc")
-    .orderBy("likes", "desc")
+    .orderBy("drawings.id", "desc")
     .offset(offset)
     .limit(limit)
     .then((data) => {
