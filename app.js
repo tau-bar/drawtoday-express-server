@@ -194,8 +194,9 @@ app.get("/api/getPosts", async (req, res) => {
       likedSubquery
     )
     .count("likes.id AS likes")
-    .where("word_id", wordId)
     .groupBy("drawings.id")
+    .orderBy("words.id", "desc")
+    .orderBy("likes", "desc")
     .offset(offset)
     .limit(limit)
     .then((data) => {
